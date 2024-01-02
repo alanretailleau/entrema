@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "226127394464",
+    "project_id": "entr-ema",
+    "storage_bucket": "entr-ema.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:226127394464:android:2257e8f6cc36f1c3557bc5",
+        "android_client_info": {
+          "package_name": "com.ema.entrema"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCumbh62s89HX91T4-pMqRx9U3XIH99CTM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
