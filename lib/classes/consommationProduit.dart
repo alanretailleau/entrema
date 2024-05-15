@@ -108,6 +108,23 @@ class ConsoProd {
             : null);
   }
 
+  static Stream<List<ConsoProd>> streamMultipleConsommationProds(
+      List<String> idsProd) {
+    // Créer une liste de streams pour chaque ID produit
+    var streams = idsProd.map((idProd) {
+      return FirebaseFirestore.instance
+          .collection('consoProds')
+          .doc(idProd)
+          .snapshots()
+          .map((snapshot) => fromJson(snapshot.data()!));
+    }).toList();
+    // Fusionner tous les streams en un seul
+    var mergedStream = StreamGroup.merge(streams);
+
+    // Transformer les émissions en une liste de listes
+    return StreamZip<ConsoProd>(streams).asBroadcastStream();
+  }
+
   // Create from JSON from Firestore
   static ConsoProd fromJson(Map<String, dynamic> json) {
     return ConsoProd(
@@ -374,17 +391,5 @@ class ConsommationProductService {
       await newConsoProd.create();
       await newConsommation.create();
     }
-    await ConsommationCategorieService.addOrUpdateConsommationCategorie(
-        commerce,
-        categorie,
-        date,
-        ConsoCategorie(
-          id: FirebaseFirestore.instance.collection("consoCategories").doc().id,
-          livraison: newConsoProd.livraison,
-          date: newConsoProd.date,
-          idAdherent: newConsoProd.idAdherent,
-          quantite: newConsoProd.quantite,
-        ),
-        startQuantite: startQuantite);
   }
 }

@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:csv/csv.dart';
 import 'package:entrema/classes/categorie.dart';
 import 'package:entrema/classes/commerce.dart';
 import 'package:entrema/classes/user.dart';
@@ -6,6 +10,7 @@ import 'package:entrema/color.dart';
 import 'package:entrema/functions/function.dart';
 import 'package:entrema/home/home.dart';
 import 'package:entrema/home/scan/scanPage.dart';
+import 'package:entrema/maths/romanScript.dart';
 import 'package:entrema/widget/FieldText.dart';
 import 'package:entrema/widget/Loader.dart';
 import 'package:entrema/widget/appbar.dart';
@@ -14,6 +19,7 @@ import 'package:entrema/widget/box.dart';
 import 'package:entrema/widget/boxBox.dart';
 import 'package:entrema/widget/button.dart';
 import 'package:entrema/widget/pdp.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_masked_text2/flutter_masked_text2.dart';
@@ -90,8 +96,187 @@ class _CategoriePageState extends State<CategoriePage> {
               NewCategoriePage(user: widget.user, commerce: widget.commerce));
         }
       },
-      {"nom": "Supprimer une catégorie", "icon": "cancel", "onPressed": () {}},
-      {"nom": "Favoris", "icon": "star", "onPressed": () {}},
+      {
+        "nom": "Supprimer une catégorie",
+        "icon": "cancel",
+        "onPressed": () async {
+          Categorie? categorieTemp = await Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => CategoriePage(
+                      choice: true,
+                      user: widget.user,
+                      commerce: widget.commerce,
+                    )),
+          );
+          if (categorieTemp != null) {
+            // ignore: use_build_context_synchronously
+            if ((await editDialog(context, "Annuler", "Supprimer",
+                    "Souhaitez-vous supprimer ${categorieTemp.nom} ?")) ==
+                true) {
+              categorieTemp.delete();
+            }
+          }
+        }
+      },
+      {
+        "nom": "Importer des catégories",
+        "icon": "verified",
+        "onPressed": () async {
+          FilePickerResult? result = await FilePicker.platform.pickFiles();
+          if (result != null) {
+            File file = File(result.files.single.path!);
+            List<List> fields = await file
+                .openRead()
+                .transform(utf8.decoder)
+                .transform(const CsvToListConverter())
+                .toList();
+            List<List<dynamic>> newFields = fields
+                .map((e) => e
+                    .map((f) => f.runtimeType == String
+                        ? f.contains("€")
+                            ? (double.parse(f
+                                        .toString()
+                                        .substring(0, f.length - 1)
+                                        .replaceAll(",", ".")) *
+                                    100)
+                                .round()
+                            : f.contains(",") && double.tryParse(f) != null
+                                ? double.tryParse(f)
+                                : f.contains("TRUE")
+                                    ? true
+                                    : f.contains("FALSE")
+                                        ? false
+                                        : f.trim()
+                        : f)
+                    .toList())
+                .toList();
+            List<Categorie> categories = [];
+            if (newFields.length > 3) {
+              for (var i = 3; i < newFields.length; i++) {
+                categories.add(Categorie(
+                  keywords: List<String>.from(newFields[i][2].split(","))
+                      .map((e) => removeDiacritics(e.trim().toLowerCase()))
+                      .toList(),
+                  commerce: widget.commerce.id,
+                  unite: ["L", "cL", "mL", "kg", "g", "mg"]
+                          .contains(newFields[i][3])
+                      ? newFields[i][3]
+                      : "g",
+                  price: newFields[i][4],
+                  id: FirebaseFirestore.instance
+                      .collection("adherents")
+                      .doc()
+                      .id,
+                  nom: newFields[i][1],
+                  couleur: Color(
+                      int.tryParse("0xff${newFields[i][5]}") ?? 0xff8c07dd),
+                  options: [],
+                ));
+              }
+              // ignore: use_build_context_synchronously
+              showCupertinoModalPopup(
+                  context: context,
+                  builder: (context) {
+                    return Material(
+                      color: Colors.transparent,
+                      child: Container(
+                        height: MediaQuery.of(context).size.height * 2 / 3,
+                        padding:
+                            const EdgeInsets.only(left: 20, right: 20, top: 20),
+                        decoration: BoxDecoration(
+                            color: white(context),
+                            borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(20))),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              "Êtes-vous sûr de vouloir ajouter ${categories.length} nouvelle${categories.length > 1 ? "s" : ""} catégorie${categories.length > 1 ? "s" : ""} ?",
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                            Expanded(
+                              child: ListView.builder(
+                                  physics: const BouncingScrollPhysics(),
+                                  itemCount: categories.length,
+                                  itemBuilder: (context, index) {
+                                    Categorie categorie = categories[index];
+                                    return Column(
+                                      children: [
+                                        categorie.show(
+                                          onPressed: widget.choice
+                                              ? () {
+                                                  Navigator.pop(
+                                                      context, categorie);
+                                                }
+                                              : () async {
+                                                  Categorie? adherentTemp =
+                                                      await Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                        builder: (context) =>
+                                                            NewCategoriePage(
+                                                                nouveau: true,
+                                                                user:
+                                                                    widget.user,
+                                                                commerce: widget
+                                                                    .commerce,
+                                                                categorie:
+                                                                    categorie)),
+                                                  );
+                                                  if (adherentTemp != null) {
+                                                    categories[index] =
+                                                        adherentTemp;
+                                                  }
+                                                },
+                                        ),
+                                        categories.length - 1 > index
+                                            ? Container(
+                                                margin:
+                                                    const EdgeInsets.symmetric(
+                                                        vertical: 2),
+                                                height: 1,
+                                                color: black(context)
+                                                    .withOpacity(.1),
+                                              )
+                                            : Container()
+                                      ],
+                                    );
+                                  }),
+                            ),
+                            const SizedBox(height: 20),
+                            CustomButton(
+                                splashColor: black(context).withOpacity(.1),
+                                highlightColor: black(context).withOpacity(.1),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 10),
+                                color: white(context),
+                                shape: StadiumBorder(
+                                    side: BorderSide(
+                                        color: black(context).withOpacity(.1))),
+                                onPressed: () {
+                                  for (var i = 0; i < categories.length; i++) {
+                                    categories[i].create();
+                                  }
+                                  Navigator.pop(context);
+                                },
+                                child: const Text("Valider",
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18)))
+                          ],
+                        ),
+                      ),
+                    );
+                  });
+            }
+          } else {
+            // User canceled the picker
+          }
+        }
+      },
     ];
     Widget body = SizedBox(
         width: double.infinity,
@@ -146,9 +331,7 @@ class _CategoriePageState extends State<CategoriePage> {
                 shrinkWrap: true,
                 itemBuilder: (context, index) {
                   Categorie categorie = snapshot.data![index];
-                  return CustomButton(
-                    padding: const EdgeInsets.only(left: 12),
-                    color: lighten(categorie.couleur.withOpacity(.05), 0.3),
+                  return categorie.show(
                     onPressed: widget.choice
                         ? () {
                             Navigator.pop(context, categorie);
@@ -161,21 +344,6 @@ class _CategoriePageState extends State<CategoriePage> {
                                     commerce: widget.commerce,
                                     categorie: categorie));
                           },
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(100)),
-                    child: Row(
-                      children: [
-                        Container(
-                          height: 10,
-                          width: 10,
-                          decoration: BoxDecoration(
-                              color: categorie.couleur,
-                              borderRadius: BorderRadius.circular(5)),
-                        ),
-                        SizedBox(width: 10),
-                        Text(categorie.nom)
-                      ],
-                    ),
                   );
                 });
           } else {
@@ -195,9 +363,14 @@ class _CategoriePageState extends State<CategoriePage> {
 
 class NewCategoriePage extends StatefulWidget {
   const NewCategoriePage(
-      {super.key, required this.user, required this.commerce, this.categorie});
+      {super.key,
+      required this.user,
+      required this.commerce,
+      this.categorie,
+      this.nouveau = false});
   final User user;
   final Categorie? categorie;
+  final bool nouveau;
   final Commerce commerce;
 
   @override
@@ -209,7 +382,7 @@ class _NewCategoriePageState extends State<NewCategoriePage> {
   TextEditingController keyword = TextEditingController();
   MoneyMaskedTextController prix = MoneyMaskedTextController(rightSymbol: '€');
   late Categorie categorie;
-  List unites = ["L", "cL", "mL", "kg", "g", "mg"];
+  List unites = ["L", "cL", "mL", "kg", "g", "mg", "pièce"];
   late Color color;
 
   int uniteIndex = 0;
@@ -284,10 +457,14 @@ class _NewCategoriePageState extends State<NewCategoriePage> {
                             highlightColor: Colors.green.withOpacity(.1),
                             onPressed: categorie.nom.length > 2
                                 ? (widget.categorie != null
-                                    ? () {
-                                        categorie.update();
-                                        Navigator.pop(context);
-                                      }
+                                    ? widget.nouveau
+                                        ? () {
+                                            Navigator.pop(context, categorie);
+                                          }
+                                        : () {
+                                            categorie.update();
+                                            Navigator.pop(context);
+                                          }
                                     : () {
                                         categorie.create();
                                         Navigator.pop(context);
@@ -299,7 +476,9 @@ class _NewCategoriePageState extends State<NewCategoriePage> {
                                     color: Colors.green.withOpacity(.3))),
                             child: Text(
                                 widget.categorie != null
-                                    ? "Enregistrer"
+                                    ? widget.nouveau
+                                        ? "Valider"
+                                        : "Enregistrer"
                                     : "Valider",
                                 style: const TextStyle(
                                     fontSize: 18,

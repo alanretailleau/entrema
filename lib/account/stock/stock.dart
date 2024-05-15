@@ -106,8 +106,9 @@ class _StockPageState extends State<StockPage> {
             print("Lancement de la simulation");
             int pourcentConsommationJournaliere = 3;
             int pourcentCommande = 10;
-            DateTime dateDebut = DateTime(
-                DateTime.now().year, DateTime.now().month, DateTime.now().day);
+            DateTime dateDebut = DateTime(DateTime.now().year,
+                    DateTime.now().month, DateTime.now().day)
+                .subtract(const Duration(days: 11));
             DateTime dateFin = dateDebut.add(const Duration(days: 10));
             List<Categorie> categories =
                 await Categorie.getCategoriesByCommerce(widget.commerce.id);
@@ -247,7 +248,7 @@ class _StockPageState extends State<StockPage> {
         const Text("Paramètres",
             style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
         body,
-        Settings,
+        null,
         context);
   }
 
@@ -450,6 +451,8 @@ class _StockPageProductState extends State<StockPageProduct> {
                                     evolutionStock(consommation),
                                     const SizedBox(height: 10),
                                     quantite(snapshot.data!),
+                                    const SizedBox(height: 10),
+                                    evolutionJournaliere(snapshot.data!),
                                   ]);
                             } else {
                               return Column(
@@ -756,7 +759,7 @@ class _StockPageProductState extends State<StockPageProduct> {
         Text("Évolution du stock (en ${widget.produit.unite})",
             style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
         body,
-        Settings,
+        null,
         context);
   }
 
@@ -1035,7 +1038,364 @@ class _StockPageProductState extends State<StockPageProduct> {
         Text("Quantité consommée (en ${widget.produit.unite})",
             style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
         body,
-        Settings,
+        null,
+        context);
+  }
+
+  int daysIndex = 0;
+
+  Widget evolutionJournaliere(List<ConsommationProduct> consommation) {
+    List<Color> gradientColors = [
+      widget.produit.couleur,
+      Theme.of(context).brightness == Brightness.dark
+          ? darken(widget.produit.couleur, 0.3)
+          : lighten(widget.produit.couleur, 0.3),
+    ];
+    Widget bottomTitleWidgets(DateTime start, double value, TitleMeta meta) {
+      const style = TextStyle(
+        fontSize: 12,
+      );
+
+      return SideTitleWidget(
+        angle: -pi / 4,
+        axisSide: meta.axisSide,
+        child: Text(
+          DateFormat("HH:mm")
+              .format(start.add(Duration(minutes: value.toInt()))),
+          style: style,
+        ),
+      );
+    }
+
+    LineChartData mainData(
+        List<ConsoProd> data, List<ConsommationProduct> conso) {
+      for (var i = 0; i < data.length; i++) {
+        if (i == 0) {
+          data[i].quantite += conso[daysIndex].quantite;
+        } else {
+          data[i].quantite = data[i - 1].quantite +
+              data[i].quantite * (data[i].livraison ? 1 : (-1));
+        }
+      }
+      return LineChartData(
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: true,
+          getDrawingHorizontalLine: (value) {
+            return FlLine(
+              color: black(context).withOpacity(.1),
+              strokeWidth: 1,
+            );
+          },
+          getDrawingVerticalLine: (value) {
+            return FlLine(
+              color: black(context).withOpacity(.1),
+              strokeWidth: 1,
+            );
+          },
+        ),
+        titlesData: FlTitlesData(
+          show: true,
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 30,
+              getTitlesWidget: (a, b) {
+                return bottomTitleWidgets(data.first.date, a, b);
+              },
+            ),
+          ),
+          leftTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: true, reservedSize: 45),
+          ),
+        ),
+        borderData: FlBorderData(
+          show: true,
+          border: Border.all(color: widget.produit.couleur.withOpacity(.2)),
+        ),
+        minX: 0,
+        maxX: data.last.date.difference(data.first.date).inMinutes.toDouble(),
+        minY: (data.map((e) => e.quantite.toDouble()).toList()).reduce(min),
+        maxY: (data.map((e) => e.quantite.toDouble()).toList()).reduce(max),
+        lineTouchData: LineTouchData(
+          touchTooltipData: LineTouchTooltipData(
+            tooltipRoundedRadius: 10,
+            maxContentWidth: 100,
+            tooltipBgColor: white(context),
+            getTooltipItems: (touchedSpots) {
+              return touchedSpots.map((LineBarSpot touchedSpot) {
+                final textStyle = TextStyle(
+                  color: black(context),
+                  fontSize: 14,
+                );
+                return LineTooltipItem(
+                  touchedSpot.y.round().toString(),
+                  textStyle,
+                );
+              }).toList();
+            },
+          ),
+          handleBuiltInTouches: true,
+          getTouchLineStart: (data, index) => 0,
+        ),
+        lineBarsData: [
+          LineChartBarData(
+            spots: data
+                .map((e) => FlSpot(
+                    e.date
+                        .difference(data.first.date)
+                        .inMinutes
+                        .abs()
+                        .toDouble(),
+                    e.quantite))
+                .toList(),
+            isCurved: true,
+            gradient: LinearGradient(
+              colors: gradientColors,
+            ),
+            barWidth: 5,
+            isStrokeCapRound: true,
+            dotData: FlDotData(
+              getDotPainter: (p0, p1, p2, p3) {
+                return FlDotCirclePainter(
+                    color: widget.produit.couleur,
+                    strokeColor: widget.produit.couleur.withOpacity(.3),
+                    strokeWidth: 2);
+              },
+              show: true,
+            ),
+            belowBarData: BarAreaData(
+              show: true,
+              gradient: LinearGradient(
+                colors: gradientColors
+                    .map((color) => color.withOpacity(0.3))
+                    .toList(),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    LineChartData avgData(
+        List<ConsoProd> data, List<ConsommationProduct> conso) {
+      for (var i = 0; i < data.length; i++) {
+        if (i == 0) {
+          data[i].quantite += conso[daysIndex].quantite;
+        } else {
+          data[i].quantite = data[i - 1].quantite +
+              data[i].quantite * (data[i].livraison ? 1 : (-1));
+        }
+      }
+      double average =
+          (data.map((e) => e.quantite).reduce((a, b) => a + b) / data.length)
+              .toDouble();
+      return LineChartData(
+        lineTouchData: const LineTouchData(enabled: false),
+        gridData: FlGridData(
+          show: true,
+          drawHorizontalLine: true,
+          getDrawingVerticalLine: (value) {
+            return FlLine(
+              color: black(context).withOpacity(.1),
+              strokeWidth: 1,
+            );
+          },
+          getDrawingHorizontalLine: (value) {
+            return FlLine(
+              color: black(context).withOpacity(.1),
+              strokeWidth: 1,
+            );
+          },
+        ),
+        titlesData: FlTitlesData(
+          show: true,
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 30,
+              getTitlesWidget: (a, b) {
+                return bottomTitleWidgets(data.first.date, a, b);
+              },
+            ),
+          ),
+          leftTitles: const AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 45,
+            ),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+        ),
+        borderData: FlBorderData(
+          show: true,
+          border: Border.all(color: widget.produit.couleur.withOpacity(.2)),
+        ),
+        minX: 0,
+        maxX: data.last.date.difference(data.first.date).inMinutes.toDouble(),
+        minY: (data.map((e) => e.quantite.toDouble()).toList()).reduce(min),
+        maxY: (data.map((e) => e.quantite.toDouble()).toList()).reduce(max),
+        lineBarsData: [
+          LineChartBarData(
+            spots: data
+                .map((e) => FlSpot(
+                    e.date
+                        .difference(data.first.date)
+                        .inMinutes
+                        .abs()
+                        .toDouble(),
+                    average))
+                .toList(),
+            isCurved: true,
+            gradient: LinearGradient(
+              colors: [
+                ColorTween(begin: gradientColors[0], end: gradientColors[1])
+                    .lerp(0.2)!,
+                ColorTween(begin: gradientColors[0], end: gradientColors[1])
+                    .lerp(0.2)!,
+              ],
+            ),
+            barWidth: 5,
+            isStrokeCapRound: true,
+            dotData: const FlDotData(
+              show: false,
+            ),
+            belowBarData: BarAreaData(
+              show: true,
+              gradient: LinearGradient(
+                colors: [
+                  ColorTween(begin: gradientColors[0], end: gradientColors[1])
+                      .lerp(0.2)!
+                      .withOpacity(0.1),
+                  ColorTween(begin: gradientColors[0], end: gradientColors[1])
+                      .lerp(0.2)!
+                      .withOpacity(0.1),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    Widget body = Column(
+      children: [
+        SizedBox(
+            height: 40,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                SizedBox(
+                    height: 40,
+                    width: 40,
+                    child: CustomButton(
+                        color: black(context).withOpacity(.1),
+                        shape: const StadiumBorder(),
+                        onPressed: daysIndex > 1
+                            ? () {
+                                setState(() {
+                                  daysIndex--;
+                                });
+                              }
+                            : null,
+                        child: Image.asset("assets/icon/back.png",
+                            color: black(context), scale: 10))),
+                consommation.length > daysIndex
+                    ? Text(DateFormat("EEE dd/MM/yyyy")
+                        .format(consommation[daysIndex].date))
+                    : Container(),
+                SizedBox(
+                    height: 40,
+                    width: 40,
+                    child: CustomButton(
+                      color: black(context).withOpacity(.1),
+                      shape: const StadiumBorder(),
+                      onPressed: daysIndex < consommation.length - 1
+                          ? () {
+                              setState(() {
+                                daysIndex++;
+                              });
+                            }
+                          : null,
+                      child: RotatedBox(
+                        quarterTurns: 2,
+                        child: Image.asset("assets/icon/back.png",
+                            color: black(context), scale: 10),
+                      ),
+                    ))
+              ],
+            )),
+        Stack(
+          alignment: Alignment.topRight,
+          children: <Widget>[
+            AspectRatio(
+              aspectRatio: 1.70,
+              child: Padding(
+                  padding: const EdgeInsets.only(
+                    right: 18,
+                    left: 12,
+                    top: 24,
+                    bottom: 12,
+                  ),
+                  child: consommation.length > daysIndex
+                      ? StreamBuilder<List<ConsoProd>>(
+                          stream: ConsoProd.streamMultipleConsommationProds(
+                              consommation[daysIndex].consommation),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData) {
+                              return Center(
+                                  child: Loader(color: black(context)));
+                            }
+                            List<ConsoProd> consoProd = snapshot.data!;
+                            consoProd.sort((a, b) => a.date.compareTo(b.date));
+                            return LineChart(
+                              showAvg
+                                  ? avgData(consoProd, consommation)
+                                  : mainData(consoProd, consommation),
+                            );
+                          })
+                      : Container()),
+            ),
+            SizedBox(
+              height: 34,
+              child: TextButton(
+                onPressed: () {
+                  setState(() {
+                    showAvg = !showAvg;
+                  });
+                },
+                child: Text(
+                  'moyenne',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: showAvg
+                        ? black(context).withOpacity(0.5)
+                        : black(context),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+
+    return Box(
+        Text("Évolution journalière (en ${widget.produit.unite})",
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+        body,
+        null,
         context);
   }
 }
@@ -1091,6 +1451,10 @@ class _StockPageCategorieState extends State<StockPageCategorie> {
                                         DateTime.now()
                                             .add(const Duration(days: 31))),
                                 builder: (context, snapshot2) {
+                                  if (!snapshot2.hasData) {
+                                    return Center(
+                                        child: Loader(color: black(context)));
+                                  }
                                   List<List<ConsommationProduct>> consommation =
                                       snapshot2.data!;
                                   for (var i = 0;
@@ -1560,7 +1924,7 @@ class _StockPageCategorieState extends State<StockPageCategorie> {
         Text("Évolution du stock (en ${widget.categorie.unite})",
             style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
         body,
-        Settings,
+        null,
         context);
   }
 }

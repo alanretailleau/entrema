@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:developer';
 
-import 'package:barcode_scan2/barcode_scan2.dart';
+import 'package:ai_barcode_scanner/ai_barcode_scanner.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:entrema/account/adherent/adherent.dart';
 import 'package:entrema/account/produit/produit.dart';
@@ -23,11 +23,13 @@ import 'package:entrema/widget/button.dart';
 import 'package:entrema/widget/galerieElement.dart';
 import 'package:entrema/widget/money.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_masked_text2/flutter_masked_text2.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
-import 'package:fast_barcode_scanner/fast_barcode_scanner.dart';
+import 'package:qr_bar_code_scanner_dialog/qr_bar_code_scanner_dialog.dart';
 import 'package:vibration/vibration.dart';
+import 'package:universal_html/html.dart' as html;
 import '../../color.dart';
 
 class ScanPage extends StatefulWidget {
@@ -41,6 +43,11 @@ class ScanPage extends StatefulWidget {
 
 class _ScanPageState extends State<ScanPage> {
   List<dynamic> productScan = [];
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   PageController _controller = PageController();
 
@@ -94,7 +101,7 @@ class _ScanPageState extends State<ScanPage> {
                                     borderRadius: BorderRadius.circular(12),
                                     child: Stack(
                                       children: [
-                                        BarcodeCamera(
+                                        /*BarcodeCamera(
                                           types: const [
                                             BarcodeType.ean8,
                                             BarcodeType.ean13,
@@ -177,6 +184,88 @@ class _ScanPageState extends State<ScanPage> {
                                               blurAmount: 50,
                                             ),
                                           ],
+                                        ),*/
+
+                                        AiBarcodeScanner(
+                                          controller: MobileScannerController(
+                                            detectionTimeoutMs: 1000,
+                                            detectionSpeed:
+                                                DetectionSpeed.normal,
+                                          ),
+                                          onScan: (String value) {},
+                                          onDetect: (BarcodeCapture
+                                              barcodeCapture) async {
+                                            if (productScan
+                                                .where((element) =>
+                                                    (element.runtimeType ==
+                                                            Product &&
+                                                        (element as Product)
+                                                            .barcode
+                                                            .contains(
+                                                                barcodeCapture
+                                                                    .barcodes
+                                                                    .first
+                                                                    .rawValue)) ||
+                                                    (element.runtimeType ==
+                                                            ScanProduct &&
+                                                        (element as ScanProduct)
+                                                                .id ==
+                                                            barcodeCapture
+                                                                .barcodes
+                                                                .first
+                                                                .rawValue))
+                                                .isEmpty) {
+                                              /*CameraController.instance
+                                                  .pauseDetector();*/
+                                              productScan.add(await getProduct(
+                                                  barcodeCapture.barcodes.first
+                                                      .rawValue!));
+                                              setState(() {
+                                                /*CameraController.instance
+                                                    .resumeDetector();*/
+                                                _controller.animateToPage(
+                                                    productScan.length - 1,
+                                                    duration: const Duration(
+                                                        milliseconds: 500),
+                                                    curve: Curves
+                                                        .easeInOutCubicEmphasized);
+                                              });
+                                            } else {
+                                              int indexOf = productScan.indexOf(
+                                                  productScan.firstWhere((element) =>
+                                                      (element.runtimeType ==
+                                                              Product &&
+                                                          (element as Product)
+                                                              .barcode
+                                                              .contains(barcodeCapture
+                                                                  .barcodes
+                                                                  .first
+                                                                  .rawValue)) ||
+                                                      (element.runtimeType ==
+                                                              ScanProduct &&
+                                                          (element as ScanProduct)
+                                                                  .id ==
+                                                              barcodeCapture
+                                                                  .barcodes
+                                                                  .first
+                                                                  .rawValue)));
+
+                                              _controller.animateToPage(indexOf,
+                                                  duration: const Duration(
+                                                      milliseconds: 500),
+                                                  curve: Curves
+                                                      .easeInOutCubicEmphasized);
+                                              /*CameraController.instance
+                                                  .resumeDetector();*/
+                                            }
+                                            if (await Vibration
+                                                    .hasAmplitudeControl() ==
+                                                true) {
+                                              Vibration.vibrate(
+                                                  amplitude: 128,
+                                                  duration: 100);
+                                            }
+                                          },
                                         ),
                                         Positioned(
                                             top: 5,
@@ -197,12 +286,12 @@ class _ScanPageState extends State<ScanPage> {
                                                   onPressed: () {
                                                     setState(() {});
                                                     if (cameraPosition) {
-                                                      CameraController.instance
-                                                          .pauseDetector();
+                                                      /*CameraController.instance
+                                                          .pauseDetector();*/
                                                       cameraPosition = false;
                                                     } else {
-                                                      CameraController.instance
-                                                          .resumeDetector();
+                                                      /*CameraController.instance
+                                                          .resumeDetector();*/
                                                       cameraPosition = true;
                                                     }
                                                   },
@@ -266,7 +355,7 @@ class _ScanPageState extends State<ScanPage> {
                     style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700))
               ])
             : Row(children: [
-                Text("${adherent!.prenom} ${adherent!.nom}",
+                Text("${adherent.prenom} ${adherent.nom}",
                     style: const TextStyle(
                         fontSize: 12, fontWeight: FontWeight.w700)),
                 const SizedBox(
@@ -380,7 +469,10 @@ class _ScanPageState extends State<ScanPage> {
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
-                                    Container(
+                                    courses[0]
+                                                    .element[index]
+                                                    .produit
+                                                    .url != "" ? Container(
                                         decoration: BoxDecoration(
                                           borderRadius:
                                               BorderRadius.circular(10),
@@ -395,7 +487,7 @@ class _ScanPageState extends State<ScanPage> {
                                                     .element[index]
                                                     .produit
                                                     .url,
-                                                fit: BoxFit.cover))),
+                                                fit: BoxFit.cover))) : Container(),
                                     const SizedBox(width: 10),
                                     Column(
                                       mainAxisAlignment:
@@ -403,14 +495,25 @@ class _ScanPageState extends State<ScanPage> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Text(
+                                        Container(
+                                          constraints: BoxConstraints(
+                                              maxWidth: MediaQuery.of(context)
+                                                      .size
+                                                      .width *
+                                                  1 /
+                                                  3),
+                                          child: Text(
                                             courses[0]
                                                 .element[index]
                                                 .produit
                                                 .nom,
                                             style: const TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.bold)),
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14),
+                                            textAlign: TextAlign.center,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
                                         CustomButton(
                                           padding: const EdgeInsets.symmetric(
                                               horizontal: 10),
@@ -460,7 +563,12 @@ class _ScanPageState extends State<ScanPage> {
                                                           mainAxisSize:
                                                               MainAxisSize.min,
                                                           children: [
-                                                            GalerieElementV2(
+                                                            courses[
+                                                                            0]
+                                                                        .element[
+                                                                            index]
+                                                                        .produit
+                                                                        .url != "" ? GalerieElementV2(
                                                                 height: 60,
                                                                 width: 60,
                                                                 idUser: widget
@@ -484,23 +592,36 @@ class _ScanPageState extends State<ScanPage> {
                                                                         .url,
                                                                     galerie:
                                                                         ""),
-                                                                radius: 30),
+                                                                radius: 30) : Container(),
                                                             const SizedBox(
                                                                 height: 20),
-                                                            Text(
-                                                              courses[0]
-                                                                  .element[
-                                                                      index]
-                                                                  .produit
-                                                                  .nom,
-                                                              style: const TextStyle(
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                  fontSize: 18),
-                                                              textAlign:
-                                                                  TextAlign
-                                                                      .center,
+                                                            Container(
+                                                              constraints: BoxConstraints(
+                                                                  maxWidth: MediaQuery.of(
+                                                                              context)
+                                                                          .size
+                                                                          .width *
+                                                                      1 /
+                                                                      3),
+                                                              child: Text(
+                                                                courses[0]
+                                                                    .element[
+                                                                        index]
+                                                                    .produit
+                                                                    .nom,
+                                                                style: const TextStyle(
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                    fontSize:
+                                                                        18),
+                                                                textAlign:
+                                                                    TextAlign
+                                                                        .center,
+                                                                overflow:
+                                                                    TextOverflow
+                                                                        .ellipsis,
+                                                              ),
                                                             ),
                                                             const SizedBox(
                                                                 height: 50),
@@ -547,9 +668,9 @@ class _ScanPageState extends State<ScanPage> {
                                                                 onPressed: () {
                                                                   setState(
                                                                       () {});
-                                                                  CameraController
+                                                                  /*CameraController
                                                                       .instance
-                                                                      .resumeDetector();
+                                                                      .resumeDetector();*/
                                                                   Navigator.pop(
                                                                       context);
                                                                 },
@@ -618,7 +739,12 @@ class _ScanPageState extends State<ScanPage> {
                                                       mainAxisSize:
                                                           MainAxisSize.min,
                                                       children: [
-                                                        GalerieElementV2(
+                                                        courses[
+                                                                            0]
+                                                                        .element[
+                                                                            index]
+                                                                        .produit
+                                                                        .url != "" ? GalerieElementV2(
                                                             height: 60,
                                                             width: 60,
                                                             idUser:
@@ -639,22 +765,33 @@ class _ScanPageState extends State<ScanPage> {
                                                                     .produit
                                                                     .url,
                                                                 galerie: ""),
-                                                            radius: 30),
+                                                            radius: 30) : Container(),
                                                         const SizedBox(
                                                             height: 20),
-                                                        Text(
-                                                          courses[0]
-                                                              .element[index]
-                                                              .produit
-                                                              .nom,
-                                                          style:
-                                                              const TextStyle(
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                  fontSize: 18),
-                                                          textAlign:
-                                                              TextAlign.center,
+                                                        Container(
+                                                          constraints: BoxConstraints(
+                                                              maxWidth: MediaQuery.of(
+                                                                          context)
+                                                                      .size
+                                                                      .width *
+                                                                  1 /
+                                                                  3),
+                                                          child: Text(
+                                                            courses[0]
+                                                                .element[index]
+                                                                .produit
+                                                                .nom,
+                                                            style: const TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                                fontSize: 18),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                          ),
                                                         ),
                                                         const SizedBox(
                                                             height: 50),
@@ -710,9 +847,9 @@ class _ScanPageState extends State<ScanPage> {
                                                                       .price = null;
                                                                   setState(
                                                                       () {});
-                                                                  CameraController
+                                                                  /*CameraController
                                                                       .instance
-                                                                      .resumeDetector();
+                                                                      .resumeDetector();*/
                                                                   Navigator.pop(
                                                                       context);
                                                                 },
@@ -738,9 +875,9 @@ class _ScanPageState extends State<ScanPage> {
                                                                         10),
                                                             onPressed: () {
                                                               setState(() {});
-                                                              CameraController
+                                                              /*CameraController
                                                                   .instance
-                                                                  .resumeDetector();
+                                                                  .resumeDetector();*/
                                                               Navigator.pop(
                                                                   context);
                                                             },
@@ -792,17 +929,23 @@ class _ScanPageState extends State<ScanPage> {
                                                           .price! /
                                                       100
                                                   : courses[0]
-                                                          .element[index]
-                                                          .poids /
-                                                      courses[0]
-                                                          .element[index]
-                                                          .produit
-                                                          .poids *
-                                                      courses[0]
-                                                          .element[index]
-                                                          .produit
-                                                          .price /
-                                                      100,
+                                                              .element[index]
+                                                              .produit
+                                                              .poids !=
+                                                          0
+                                                      ? courses[0]
+                                                              .element[index]
+                                                              .poids /
+                                                          courses[0]
+                                                              .element[index]
+                                                              .produit
+                                                              .poids *
+                                                          courses[0]
+                                                              .element[index]
+                                                              .produit
+                                                              .price /
+                                                          100
+                                                      : 0,
                                             ),
                                             courses[0].element[index].price !=
                                                     null
@@ -877,7 +1020,7 @@ class _ScanPageState extends State<ScanPage> {
                           showDialog(
                               context: context,
                               builder: (context) {
-                                CameraController.instance.pauseDetector();
+                                /*CameraController.instance.pauseDetector();*/
                                 cameraPosition = false;
                                 return Dialog(
                                     shadowColor: Colors.transparent,
@@ -949,8 +1092,8 @@ class _ScanPageState extends State<ScanPage> {
                                                         .add(produitScan);
                                                     courses[0].update();
                                                     setState(() {});
-                                                    CameraController.instance
-                                                        .resumeDetector();
+                                                    /*CameraController.instance
+                                                        .resumeDetector();*/
                                                     Navigator.pop(context);
                                                   },
                                                   shape: StadiumBorder(
@@ -998,23 +1141,28 @@ class _ScanPageState extends State<ScanPage> {
                                 courses[0].finish = true;
                                 courses[0].date = DateTime.now();
                                 courses[0].update();
-                                for (var i = 0; i < courses[0].element.length; i++) {
-                                  await ConsommationProductService.addOrUpdateConsommationProduct(
-                            widget.commerce,
-                            (await Categorie.get(courses[0].element[i].produit.categorieId))!,
-                            courses[0].element[i].produit,
-                           courses[0].date,
-                            ConsoProd(
-                                id: FirebaseFirestore.instance
-                                    .collection("consoProds")
-                                    .doc()
-                                    .id,
-                                livraison: false,
-                                date:
-                                    courses[0].date,
-                                idAdherent: courses[0].adherent
-                                    ,
-                                quantite: courses[0].element[i].poids));
+                                for (var i = 0;
+                                    i < courses[0].element.length;
+                                    i++) {
+                                  await ConsommationProductService
+                                      .addOrUpdateConsommationProduct(
+                                          widget.commerce,
+                                          (await Categorie.get(courses[0]
+                                              .element[i]
+                                              .produit
+                                              .categorieId))!,
+                                          courses[0].element[i].produit,
+                                          courses[0].date,
+                                          ConsoProd(
+                                              id: FirebaseFirestore.instance
+                                                  .collection("consoProds")
+                                                  .doc()
+                                                  .id,
+                                              livraison: false,
+                                              date: courses[0].date,
+                                              idAdherent: courses[0].adherent,
+                                              quantite:
+                                                  courses[0].element[i].poids));
                                 }
                                 DocumentReference doc = FirebaseFirestore
                                     .instance
@@ -1143,7 +1291,7 @@ class _ScanPageState extends State<ScanPage> {
                           courses[0].element.add(produitScan);
                           courses[0].update();
                           setState(() {});
-                          CameraController.instance.resumeDetector();
+                          /*CameraController.instance.resumeDetector();*/
                           _controller.animateToPage(productScan.length,
                               duration: const Duration(milliseconds: 500),
                               curve: Curves.decelerate);
@@ -1159,7 +1307,7 @@ class _ScanPageState extends State<ScanPage> {
                   ScanProduct product = productScan[index];
                   return Column(mainAxisSize: MainAxisSize.min, children: [
                     const SizedBox(height: 20),
-                    GalerieElementV2(
+                    product.url != "" ? GalerieElementV2(
                         height: 60,
                         width: 60,
                         idUser: widget.user.id,
@@ -1171,10 +1319,10 @@ class _ScanPageState extends State<ScanPage> {
                             height: 100,
                             url: product.url,
                             galerie: ""),
-                        radius: 30),
-                    const SizedBox(height: 20),
+                        radius: 30) : Container(),
+                    SizedBox(height: product.url != "" ? 20 : 0),
                     Text(
-                      product.nom,
+                      product.nom != "" ? product.nom : product.id,
                       style: const TextStyle(
                           fontWeight: FontWeight.bold, fontSize: 18),
                       textAlign: TextAlign.center,
@@ -1191,7 +1339,7 @@ class _ScanPageState extends State<ScanPage> {
                         ? CustomButton(
                             child: const Text("Ajouter"),
                             onPressed: () {
-                              CameraController.instance.resumeDetector();
+                              /*CameraController.instance.resumeDetector();*/
                               cameraPosition = true;
                             },
                           )
@@ -1209,7 +1357,7 @@ class _ScanPageState extends State<ScanPage> {
                                         color: widget.user.couleur,
                                         fontWeight: FontWeight.bold)),
                                 onPressed: () async {
-                                  CameraController.instance.resumeDetector();
+                                  /*CameraController.instance.resumeDetector();*/
                                   cameraPosition = true;
                                   Product? prod = await Navigator.push(
                                     context,
@@ -1242,7 +1390,7 @@ class _ScanPageState extends State<ScanPage> {
                                         color: widget.user.couleur,
                                         fontWeight: FontWeight.bold)),
                                 onPressed: () async {
-                                  CameraController.instance.resumeDetector();
+                                  /*CameraController.instance.resumeDetector();*/
                                   Product? prod = await Navigator.push(
                                     context,
                                     MaterialPageRoute(
@@ -1251,7 +1399,6 @@ class _ScanPageState extends State<ScanPage> {
                                             user: widget.user,
                                             commerce: widget.commerce)),
                                   );
-                                  print(prod);
                                   if (prod != null) {
                                     productScan[index] = prod;
                                     setState(() {});
@@ -1273,8 +1420,15 @@ class _ScanPageState extends State<ScanPage> {
     if (product != null) {
       return product;
     }
-    return ScanProduct.fromJson(jsonDecode((await http.get(Uri.parse(
+    Map<String, dynamic> body = jsonDecode((await http.get(Uri.parse(
             'https://world.openfoodfacts.net/api/v2/product/$id?fields=product_name,image_front_url,_id,_keywords,categories')))
-        .body)["product"]);
+        .body);
+    if (body["status_verbose"] == "product not found") {
+      return ScanProduct(nom: "", categories: [], id: id, url: "", exist: false);
+    } else if (body["product"] != null) {
+      return ScanProduct.fromJson(body["product"]);
+    } else {
+      return null;
+    }
   }
 }

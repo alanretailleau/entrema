@@ -19,7 +19,7 @@ class _StockState extends State<Stock> {
   @override
   void initState() {
     settings = [
-      {
+      /*{
         "nom": "Historique des livraisons",
         "id": "historiqueLivraison",
         "icon": "historique",
@@ -30,7 +30,7 @@ class _StockState extends State<Stock> {
         "id": "newLivraison",
         "icon": "add2",
         "onPressed": () {}
-      },
+      },*/
     ];
     super.initState();
   }
@@ -63,10 +63,9 @@ class _StockState extends State<Stock> {
                                   const Text("Dernière livraison",
                                       style: TextStyle(
                                           fontSize: 20,
-                                          fontFamily: "Nexa",
                                           fontWeight: FontWeight.bold)),
                                   Expanded(child: Container()),
-                                  SizedBox(
+                                  /*SizedBox(
                                     height: 30,
                                     width: 30,
                                     child: CustomButton(
@@ -78,7 +77,7 @@ class _StockState extends State<Stock> {
                                       child: Image.asset("assets/icon/edit.png",
                                           scale: 10, color: black(context)),
                                     ),
-                                  ),
+                                  ),*/
                                 ],
                               ),
                               const SizedBox(height: 5),
@@ -100,10 +99,9 @@ class _StockState extends State<Stock> {
                                           const SizedBox(
                                             width: 5,
                                           ),
-                                          Text("Maison des élèves",
+                                          Text(" - ",
                                               style: TextStyle(
                                                   fontSize: 15,
-                                                  fontFamily: "Nexa",
                                                   color: widget.user.couleur,
                                                   fontWeight: FontWeight.bold)),
                                         ],
@@ -128,10 +126,9 @@ class _StockState extends State<Stock> {
                                           const SizedBox(
                                             width: 5,
                                           ),
-                                          Text("12 Sept.",
+                                          Text("-",
                                               style: TextStyle(
                                                   fontSize: 15,
-                                                  fontFamily: "Nexa",
                                                   color: widget.user.couleur,
                                                   fontWeight: FontWeight.bold)),
                                         ],
@@ -167,12 +164,12 @@ class _StockState extends State<Stock> {
                                           color: black(context),
                                           scale: 10,
                                         ),
-                                        SizedBox(width: 10),
+                                        const SizedBox(width: 10),
                                         Text(settings[index]["nom"],
                                             style: const TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
-                                                fontFamily: "Nexa"))
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ))
                                       ],
                                     )),
                               );

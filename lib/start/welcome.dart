@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../classes/user.dart';
 import '../color.dart';
 import '../functions/function.dart';
@@ -469,7 +470,10 @@ class _InscriptionState extends State<Inscription> {
                                             color: blue,
                                             fontSize: 12,
                                           )),
-                                      onPressed: () async {},
+                                      onPressed: () async {
+                                        launchUrl(
+                                            Uri.parse('https://alanretailleau.wixsite.com/sapply/copie-de-r%C3%A8gles-de-confidentialit%C3%A9'));
+                                      },
                                     ),
                                   ),
                                 ],
@@ -558,8 +562,8 @@ class _InscriptionState extends State<Inscription> {
                                                 ]),
                                                 email: email.text);
                                             if (await user.create()) {
-                                              pushPage(context,
-                                                  Home(user: user));
+                                              pushPage(
+                                                  context, Home(user: user));
                                             }
 
                                             Picture user2;

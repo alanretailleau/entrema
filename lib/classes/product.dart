@@ -4,6 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 // Product model
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:entrema/functions/function.dart';
+import 'package:entrema/widget/button.dart';
+import 'package:flutter/material.dart';
 
 // Product model
 class Product {
@@ -82,7 +85,7 @@ class Product {
       id: json['id'],
       nom: json['nom'],
       categorieId: json['categorieId'],
-      price: json['price'],
+      price: json['price'] != null ? json["price"].round() as int : 0,
       keywords: List<String>.from(json['keywords']),
       unite: json['unite'],
       poids: json["poids"].toDouble(),
@@ -202,6 +205,31 @@ class Product {
     _barcode.remove(oldBarcode);
   }
 
+  Widget show({Function()? onPressed}) {
+    return CustomButton(
+      padding: const EdgeInsets.all(5),
+      color: lighten(couleur.withOpacity(.05), 0.3),
+      onPressed: onPressed,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+      child: Row(
+        children: [
+          Container(
+              decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(color: couleur.withOpacity(.5))),
+              height: 30,
+              width: 30,
+              child: ClipRRect(
+                  borderRadius: BorderRadius.circular(15),
+                  child:
+                      Image.network(url != "" ? url : "", fit: BoxFit.cover))),
+          const SizedBox(width: 10),
+          Text(nom)
+        ],
+      ),
+    );
+  }
+
   // Méthode pour ajouter une option
   void addOption(Option option) {
     _options.add(option);
@@ -242,7 +270,7 @@ class Option {
   static Option fromJson(Map<String, dynamic> json) {
     return Option(
       name: json['nom'],
-      price: json['price'].round(),
+      price: json['price'] != null ? json["price"].round() : null,
     );
   }
 }
@@ -262,12 +290,10 @@ class ProduitScan {
     };
   }
 
-  
-
   static ProduitScan fromJson(Map<String, dynamic> json) {
     return ProduitScan(
         produit: Product.fromJson(json['produit']),
-        poids: json['poids'],
-        price: json['price']);
+        poids: json['poids'].toDouble(),
+        price: json['price'] != null ? json["price"].round() as int : null);
   }
 }

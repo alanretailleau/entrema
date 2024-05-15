@@ -2,6 +2,9 @@ import 'dart:ui';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:entrema/classes/product.dart';
+import 'package:entrema/functions/function.dart';
+import 'package:entrema/widget/button.dart';
+import 'package:flutter/material.dart';
 
 class Categorie {
   String _id;
@@ -96,6 +99,27 @@ class Categorie {
         .collection('categories')
         .doc(_id)
         .set(toJson());
+  }
+
+  Widget show({Function()? onPressed}) {
+    return CustomButton(
+      padding: const EdgeInsets.only(left: 12),
+      color: lighten(couleur.withOpacity(.05), 0.3),
+      onPressed: onPressed,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+      child: Row(
+        children: [
+          Container(
+            height: 10,
+            width: 10,
+            decoration: BoxDecoration(
+                color: couleur, borderRadius: BorderRadius.circular(5)),
+          ),
+          const SizedBox(width: 10),
+          Text(nom)
+        ],
+      ),
+    );
   }
 
   static Stream<List<Categorie>> streamCategories(String commerceId) {

@@ -14,7 +14,7 @@
     This is a placeholder for base href that will be replaced by the value of
     the `--base-href` argument provided to `flutter build`.
   -->
-  <base href="./">
+  <base href="/">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
@@ -34,11 +34,11 @@
 
   <script>
     // The value below is injected by flutter build, do not touch.
-    const serviceWorkerVersion = "2125922931";
+    const serviceWorkerVersion = "4035442058";
   </script>
   <!-- This script adds the flutter initialization JS code -->
   <script src="flutter.js" defer></script>
-  
+  <script src="https://unpkg.com/@zxing/library@0.19.1" type="application/javascript"></script>
 </head>
 <body>
   <script src="main.dart.js" type="application/javascript"></script>
@@ -46,7 +46,7 @@
     if ('serviceWorker' in navigator) {
         window.addEventListener('flutter-first-frame', function () {
           navigator.serviceWorker.register('flutter_service_worker.js?v=1417913520');
-          navigator.serviceWorker.register('flutter_service_worker.js?v=2125922931');
+          navigator.serviceWorker.register('flutter_service_worker.js?v=4035442058');
         });
       }
       window.addEventListener('load', function(ev) {

@@ -5,6 +5,22 @@ import 'package:entrema/classes/product.dart';
 import 'package:entrema/classes/user.dart';
 import 'package:flutter/material.dart';
 
+class LightCourse {
+  DateTime _date;
+  double _price;
+
+  LightCourse({
+    required DateTime date,
+    required double price,
+  })  : _date = date,
+        _price = price;
+
+  DateTime get date => _date;
+  set date(DateTime value) => _date = value;
+  double get price => _price;
+  set price(double value) => _price = value;
+}
+
 class Course {
   String _id;
   DateTime _date;
@@ -101,8 +117,9 @@ class Course {
     for (var i = 0; i < json["element"].length; i++) {
       elements.add(ProduitScan.fromJson(json["element"][i]));
     }
+
     return Course(
-        price: json["price"] as int,
+        price: json["price"].round() as int,
         id: json['id'] as String,
         date: (json['date'] as Timestamp).toDate(),
         commerce: json["commerce"] as String,
@@ -166,6 +183,39 @@ class Course {
         .snapshots()
         .map((snapshot) =>
             snapshot.docs.map((doc) => fromJson(doc.data())).toList());
+  }
+
+  static Stream<List<Course>> streamLatestCourses(
+      String commerceId, DateTime dateTime) {
+    return FirebaseFirestore.instance
+        .collection('courses')
+        .where("commerce", isEqualTo: commerceId)
+        .where("date", isGreaterThanOrEqualTo: dateTime)
+        .where("finish", isEqualTo: true)
+        .orderBy("date", descending: false)
+        .snapshots()
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => fromJson(doc.data())).toList());
+  }
+
+  static double panierMoyen(List<Course> courses) {
+    int price = 0;
+    for (var i = 0; i < courses.length; i++) {
+      for (var j = 0; j < courses[i].element.length; j++) {
+        price +=
+            courses[i].element[j].price ?? courses[i].element[j].produit.price;
+      }
+    }
+    return courses.isNotEmpty ? price / courses.length / 100 : 0.0;
+  }
+
+  double panier() {
+    int price = 0;
+    for (var j = 0; j < element.length; j++) {
+      price += element[j].price ?? element[j].produit.price;
+    }
+
+    return price / 100;
   }
 
   // Met à jour un utilisateur dans Firestore

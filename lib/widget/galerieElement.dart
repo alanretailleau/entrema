@@ -163,87 +163,92 @@ class GalerieElementV2 extends StatelessWidget {
   }
 
   Widget image(url, width, height) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        cacheW(
-            SizedBox(
-              height: !full ? height : null,
-              width: !full ? width : null,
-              child: Image(
-                image: width != null || height != null
-                    ? ResizeImage(NetworkImage(url),
-                        policy: ResizeImagePolicy.fit,
-                        width: width != null ? (width! * 2.5).round() : null,
-                        height: height != null ? (height! * 2.5).round() : null)
-                    : NetworkImage(url) as ImageProvider,
-                fit: BoxFit.cover,
-              ),
-            ),
-            url),
-        colorCover == true
-            ? Positioned(
-                left: 0,
-                right: 0,
-                top: 0,
-                bottom: 0,
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
-                        stops: const [0.1, 1],
-                        colors: edit != true
-                            ? [
-                                darken(info.darkColor.withOpacity(0.6), 0.2),
-                                Colors.transparent
-                              ]
-                            : [
-                                Colors.black.withOpacity(.6),
-                                Colors.black.withOpacity(.6)
-                              ]),
-                    borderRadius: BorderRadius.circular(radius ?? 20),
-                  ),
-                ))
-            : Container(),
-        nom != null && edit != true
-            ? Positioned(
-                bottom: 10,
-                child: Material(
-                  color: Colors.transparent,
-                  child: Text(nom ?? "",
-                      style: TextStyle(
-                          fontFamily: "Circular",
-                          color: Colors.white.withOpacity(.6))),
-                ))
-            : Container(),
-        surnom != null && edit != true
-            ? Positioned(
-                bottom: nom == null || nom == "" ? 10 : 22,
-                child: Material(
-                  color: Colors.transparent,
-                  child: Text(surnom ?? "",
-                      style: TextStyle(
-                          height: 0.8,
-                          fontFamily: "Circular",
-                          fontWeight: FontWeight.bold,
-                          fontSize: width! > 120 ? 25 : 18,
-                          color: Colors.white)),
-                ))
-            : Container(),
-        edit == true
-            ? SizedBox(
-                height: 20,
-                width: 20,
-                child: Image.asset(
-                  "assets/icon/add.png",
-                  color: Colors.white,
-                  scale: 10,
+    if (url != "" && url != null) {
+      return Stack(
+        alignment: Alignment.center,
+        children: [
+          cacheW(
+              SizedBox(
+                height: !full ? height : null,
+                width: !full ? width : null,
+                child: Image(
+                  image: width != null || height != null
+                      ? ResizeImage(NetworkImage(url),
+                          policy: ResizeImagePolicy.fit,
+                          width: width != null ? (width! * 2.5).round() : null,
+                          height:
+                              height != null ? (height! * 2.5).round() : null)
+                      : NetworkImage(url) as ImageProvider,
+                  fit: BoxFit.cover,
                 ),
-              )
-            : Container()
-      ],
-    );
+              ),
+              url),
+          colorCover == true
+              ? Positioned(
+                  left: 0,
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          stops: const [0.1, 1],
+                          colors: edit != true
+                              ? [
+                                  darken(info.darkColor.withOpacity(0.6), 0.2),
+                                  Colors.transparent
+                                ]
+                              : [
+                                  Colors.black.withOpacity(.6),
+                                  Colors.black.withOpacity(.6)
+                                ]),
+                      borderRadius: BorderRadius.circular(radius ?? 20),
+                    ),
+                  ))
+              : Container(),
+          nom != null && edit != true
+              ? Positioned(
+                  bottom: 10,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: Text(nom ?? "",
+                        style: TextStyle(
+                            fontFamily: "Circular",
+                            color: Colors.white.withOpacity(.6))),
+                  ))
+              : Container(),
+          surnom != null && edit != true
+              ? Positioned(
+                  bottom: nom == null || nom == "" ? 10 : 22,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: Text(surnom ?? "",
+                        style: TextStyle(
+                            height: 0.8,
+                            fontFamily: "Circular",
+                            fontWeight: FontWeight.bold,
+                            fontSize: width! > 120 ? 25 : 18,
+                            color: Colors.white)),
+                  ))
+              : Container(),
+          edit == true
+              ? SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: Image.asset(
+                    "assets/icon/add.png",
+                    color: Colors.white,
+                    scale: 10,
+                  ),
+                )
+              : Container()
+        ],
+      );
+    } else {
+      return Image.asset("assets/icon/transparent_image.png");
+    }
   }
 }
 

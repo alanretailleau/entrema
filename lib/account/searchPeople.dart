@@ -99,7 +99,6 @@ class _SearchPeoplePageState extends State<SearchPeoplePage> {
           if (!snapshot.hasData) {
             return Container();
           }
-          print("yo");
           return ListView.builder(
               itemCount: snapshot.data!.length,
               shrinkWrap: true,

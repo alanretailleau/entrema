@@ -9,11 +9,13 @@ import 'package:entrema/color.dart';
 import 'package:entrema/functions/function.dart';
 import 'package:entrema/home/home.dart';
 import 'package:entrema/home/scan/scanPage.dart';
+import 'package:entrema/start/welcome.dart';
 import 'package:entrema/widget/bottom_bar.dart';
 import 'package:entrema/widget/box.dart';
 import 'package:entrema/widget/boxBox.dart';
 import 'package:entrema/widget/button.dart';
 import 'package:entrema/widget/pdp.dart';
+import 'package:firebase_auth/firebase_auth.dart' as auth;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -83,11 +85,11 @@ class _AccountPageState extends State<AccountPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 5),
-          const Text("Responsable informatique",
+          /*const Text("Responsable informatique",
               style: TextStyle(
                   fontFamily: "Cocogoose",
                   fontWeight: FontWeight.w900,
-                  fontSize: 12)),
+                  fontSize: 12)),*/
           const SizedBox(height: 8),
           Text(
             widget.user.email,
@@ -117,7 +119,7 @@ class _AccountPageState extends State<AccountPage> {
           ),
         ),
         body,
-        Settings,
+        null,
         context);
   }
 
@@ -163,10 +165,18 @@ class _AccountPageState extends State<AccountPage> {
               AdherentPage(user: widget.user, commerce: widget.commerce));
         }
       },
-      {"nom": "Trésorerie", "icon": "treso", "onPressed": () {}},
-      {"nom": "Statistiques", "icon": "stats", "onPressed": () {}},
-      {"nom": "Promotions", "icon": "cadeau", "onPressed": () {}},
-      {"nom": "Alertes", "icon": "annonce", "onPressed": () {}}
+      {
+        "nom": "Se déconnecter",
+        "icon": "cancel",
+        "onPressed": () {
+          auth.FirebaseAuth.instance.signOut();
+          pushPage(context, Welcome());
+        }
+      },
+      //{"nom": "Trésorerie", "icon": "treso", "onPressed": () {}},
+      //{"nom": "Statistiques", "icon": "stats", "onPressed": () {}},
+      //{"nom": "Promotions", "icon": "cadeau", "onPressed": () {}},
+      //{"nom": "Alertes", "icon": "annonce", "onPressed": () {}}
     ];
     Widget body = SizedBox(
         width: double.infinity,
@@ -198,7 +208,7 @@ class _AccountPageState extends State<AccountPage> {
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
         ),
         body,
-        Settings,
+        null,
         context);
   }
 }
